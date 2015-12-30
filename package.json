@@ -1,0 +1,23 @@
+{
+  "name": "google-app-engine",
+  "version": "1.9.28",
+  "description": "Just a fork of Google App Engine (for PHP) with manifest files for composer and nodejs",
+  "main": "appcfg.py",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/klarkc/google-app-engine.git"
+  },
+  "keywords": [
+    "gae",
+    "google",
+    "appengine"
+  ],
+  "author": "Walker",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/klarkc/google-app-engine/issues"
+  }
+}

@@ -1,0 +1,14 @@
+{
+    "name": "klarkc/google-app-engine-php",
+    "description": "Just a fork of Google App Engine (for PHP) with manifest files for composer and nodejs",
+    "type": "library",
+    "license": "Apache",
+    "version": "1.9.28"
+    "authors": [
+        {
+            "name": "klarkc",
+            "email": "walker@praiseweb.com.br"
+        }
+    ],
+    "require": {}
+}
