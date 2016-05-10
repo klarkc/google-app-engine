@@ -31,6 +31,7 @@ from google.appengine.api import appinfo
 from google.appengine.tools.devappserver2 import http_runtime
 from google.appengine.tools.devappserver2 import instance
 from google.appengine.tools.devappserver2 import java_application
+from google.appengine.tools.devappserver2 import util
 
 # TODO: figure out what's needed to react to file changes
 
@@ -67,7 +68,8 @@ class JavaRuntimeInstanceFactory(instance.InstanceFactory):
     self._application_lock = threading.Lock()
     self._java_application = java_application.JavaApplication(
         self._module_configuration)
-    self._for_jetty9 = module_configuration.runtime == 'vm'
+    self._for_jetty9 = (module_configuration.runtime == 'vm' or
+                        util.is_env_flex(module_configuration.env))
     self._java_command = self._make_java_command()
 
   def _make_java_command(self):

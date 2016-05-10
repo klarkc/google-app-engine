@@ -39,6 +39,7 @@ from google.appengine.tools.devappserver2 import application_configuration
 from google.appengine.tools.devappserver2 import constants
 from google.appengine.tools.devappserver2 import custom_runtime
 from google.appengine.tools.devappserver2 import dispatcher
+from google.appengine.tools.devappserver2 import errors
 from google.appengine.tools.devappserver2 import go_application
 from google.appengine.tools.devappserver2 import go_runtime
 from google.appengine.tools.devappserver2 import instance
@@ -47,6 +48,7 @@ from google.appengine.tools.devappserver2 import module
 from google.appengine.tools.devappserver2 import python_runtime
 from google.appengine.tools.devappserver2 import runtime_config_pb2
 from google.appengine.tools.devappserver2 import start_response_utils
+from google.appengine.tools.devappserver2 import util
 from google.appengine.tools.devappserver2 import wsgi_server
 
 
@@ -103,6 +105,7 @@ class ModuleFacade(module.Module):
                ready=True,
                allow_skipped_files=False,
                threadsafe_override=None,
+               custom_config=None,
                php_config=None,
                python_config=None,
                java_config=None,
@@ -118,7 +121,7 @@ class ModuleFacade(module.Module):
         php_config=None,
         python_config=None,
         java_config=None,
-        custom_config=None,
+        custom_config=custom_config,
         cloud_sql_config=None,
         vm_config=vm_config,
         default_version_port=8080,
@@ -553,7 +556,6 @@ class TestModuleGetRuntimeConfig(parameterized.ParameterizedTestCase):
       ('php55', 'php_config', runtime_config_pb2.PhpConfig),
       ('java', 'java_config', runtime_config_pb2.JavaConfig),
       ('java7', 'java_config', runtime_config_pb2.JavaConfig),
-      ('java-compat', 'java_config', runtime_config_pb2.JavaConfig),
       ('python', 'python_config', runtime_config_pb2.PythonConfig),
       ('python27', 'python_config', runtime_config_pb2.PythonConfig),
       ('python-compat', 'python_config', runtime_config_pb2.PythonConfig),
@@ -2727,7 +2729,7 @@ class InstanceFactoryTest(googletest.TestCase):
     self.mox.VerifyAll()
 
   def _run_test(self, runtime, expected_factory_class, vm=False, env='1'):
-    if vm or env == '2':
+    if vm or util.is_env_flex(env):
       module_stub = ModuleFacade(vm_config=runtime_config_pb2.VMConfig())
       module_configuration = ModuleConfigurationStub(runtime='vm')
       module_configuration.env = env
@@ -2767,17 +2769,69 @@ class InstanceFactoryTest(googletest.TestCase):
     self._run_test(
         'custom', custom_runtime.CustomRuntimeInstanceFactory, vm=True)
 
-  def test_env_python_compat(self):
+  def test_env_2_python_compat(self):
     self._run_test(
         'python-compat', python_runtime.PythonRuntimeInstanceFactory, env='2')
 
-  def test_env_python_noncompat(self):
-    self._run_test(
-        'python', custom_runtime.CustomRuntimeInstanceFactory, env='2')
-
-  def test_env_go(self):
+  def test_env_2_go(self):
     self._run_test(
         'go', go_runtime.GoRuntimeInstanceFactory, env='2')
+
+  def test_env_flex_python_compat(self):
+    self._run_test(
+        'python-compat', python_runtime.PythonRuntimeInstanceFactory,
+        env='flex')
+
+  def test_env_flex_go(self):
+    self._run_test(
+        'go', go_runtime.GoRuntimeInstanceFactory, env='flex')
+
+  def test_env_flexible_python_compat(self):
+    self._run_test(
+        'python-compat', python_runtime.PythonRuntimeInstanceFactory,
+        env='flexible')
+
+  def test_env_flexible_go(self):
+    self._run_test(
+        'go', go_runtime.GoRuntimeInstanceFactory, env='flexible')
+
+
+class TestRuntimeConfigsInModuleCreation(googletest.TestCase):
+  """Tests effects of different values in CustomConfig"""
+
+  def setUp(self):
+    self.custom_config = runtime_config_pb2.CustomConfig()
+    self.module_config = ModuleConfigurationStub(
+        runtime='custom',
+        effective_runtime='custom')
+
+  def test_custom_runtime_no_configs(self):
+    """If using runtime: custom, must set --runtime or --custom_entrypoint"""
+
+    with self.assertRaises(errors.InvalidAppConfigError):
+      ModuleFacade(
+          module_configuration=self.module_config,
+          custom_config=self.custom_config)
+
+  def test_custom_runtime_with_runtime_flag(self):
+    """The runtime flag should override the the original 'custom' runtime"""
+
+    self.custom_config.runtime = 'python27'
+    module = ModuleFacade(
+        module_configuration=self.module_config,
+        custom_config=self.custom_config)
+    self.assertEquals(module.effective_runtime, self.custom_config.runtime)
+
+  def test_custom_runtime_with_too_many_flags(self):
+    """custom_entrypoint and runtime flag cannot both be set"""
+
+    self.custom_config.runtime = 'python27'
+    self.custom_config.custom_entrypoint = 'python main.py'
+    with self.assertRaises(errors.InvalidAppConfigError):
+      ModuleFacade(
+          module_configuration=self.module_config,
+          custom_config=self.custom_config)
+
 
 if __name__ == '__main__':
   googletest.main()

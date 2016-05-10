@@ -38,6 +38,7 @@ from google.appengine.tools.devappserver2 import dispatcher
 from google.appengine.tools.devappserver2 import gcd_application
 from google.appengine.tools.devappserver2 import login
 from google.appengine.tools.devappserver2 import runtime_config_pb2
+from google.appengine.tools.devappserver2 import runtime_factories
 from google.appengine.tools.devappserver2 import shutdown
 from google.appengine.tools.devappserver2 import update_checker
 from google.appengine.tools.devappserver2 import wsgi_request_info
@@ -294,7 +295,7 @@ def create_command_line_parser():
   parser = argparse.ArgumentParser(
       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   arg_name = 'yaml_path'
-  arg_help = 'Path to a yaml file, or a directory containing yaml files'
+  arg_help = 'Path to one or more app.yaml files'
   if application_configuration.java_supported():
     arg_name = 'yaml_or_war_path'
     arg_help += ', or a directory containing WEB-INF/web.xml'
@@ -433,6 +434,11 @@ def create_command_line_parser():
       'string (without quotes) to pass the port number in as an argument. For '
       'instance: --custom_entrypoint="gunicorn -b localhost:{port} '
       'mymodule:application"',
+      default='')
+  custom_group.add_argument(
+      '--runtime',
+      help='specify the default runtimes you would like to use.  Valid '
+      'runtimes are %s.' % runtime_factories.valid_runtimes(),
       default='')
 
   # Blobstore
@@ -958,6 +964,7 @@ class DevelopmentServer(object):
   def _create_custom_config(options):
     custom_config = runtime_config_pb2.CustomConfig()
     custom_config.custom_entrypoint = options.custom_entrypoint
+    custom_config.runtime = options.runtime
     return custom_config
 
   @staticmethod
