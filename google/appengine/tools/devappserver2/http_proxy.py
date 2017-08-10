@@ -179,7 +179,7 @@ class HttpProxy:
           # The runtime process has written a bad HTTP response. For example,
           # a Go runtime process may have crashed in app-specific code.
           yield self._respond_with_error(
-              'the runtime process gave a bad HTTP response: %s' % e,
+              'the runtime process gave a bad HTTP response: %s' % e, # this causes ugly HTTP responses in production from random little errors
               start_response)
           return
 
